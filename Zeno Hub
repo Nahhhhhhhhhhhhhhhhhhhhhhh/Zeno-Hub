@@ -1,0 +1,163 @@
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local OpenButton = Instance.new("TextButton", ScreenGui)
+
+OpenButton.Size = UDim2.new(0, 100, 0, 50)
+OpenButton.Position = UDim2.new(0, 10, 0.5, -25)
+OpenButton.Text = "Zen Hub"
+OpenButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.Draggable = true
+OpenButton.Active = true
+
+local isOpen = true
+OpenButton.MouseButton1Click:Connect(function()
+    isOpen = not isOpen
+    Window.Enabled = isOpen
+end)
+
+local Bloodtheme = {
+    Background = Color3.fromRGB(25, 0, 0),
+    TextColor = Color3.fromRGB(255, 0, 0),
+    Outline = Color3.fromRGB(255, 0, 0)
+}
+local MainTab = Window:CreateTab("Main", 4483362458)
+local auraKillEnabled = false
+local auraKillDistance = 100000
+
+MainTab:CreateToggle({
+    Name = "Aura Kill",
+    CurrentValue = false,
+    Flag = "AuraKill",
+    Callback = function(Value)
+        auraKillEnabled = Value
+        while auraKillEnabled do
+            for _, npc in pairs(workspace:GetChildren()) do
+                if npc:IsA("Model") and npc:FindFirstChild("Humanoid") then
+                    local distance = (npc.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude
+                    if distance <= auraKillDistance and npc.Team ~= game.Players.LocalPlayer.Team then
+                        npc.Humanoid.Health = 0
+                    end
+                end
+            end
+            wait(0.1)
+        end
+    end
+})
+local espEnabled = false
+local showItemValue = false
+
+MainTab:CreateToggle({
+    Name = "ESP",
+    CurrentValue = false,
+    Flag = "ESP",
+    Callback = function(Value)
+        espEnabled = Value
+        for _, obj in pairs(workspace:GetChildren()) do
+            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+                local billboard = Instance.new("BillboardGui", obj)
+                billboard.Size = UDim2.new(0, 100, 0, 50)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.Adornee = obj.HumanoidRootPart
+
+                local text = Instance.new("TextLabel", billboard)
+                text.Size = UDim2.new(1, 0, 1, 0)
+                text.TextColor3 = Color3.fromRGB(255, 0, 0) -- Enemy = Red
+                text.Text = obj.Name .. " [" .. math.floor((obj.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude) .. " studs]"
+                text.BackgroundTransparency = 1
+                text.TextScaled = true
+            end
+        end
+    end
+})
+
+MainTab:CreateToggle({
+    Name = "Show Item Value",
+    CurrentValue = false,
+    Flag = "ItemValue",
+    Callback = function(Value)
+        showItemValue = Value
+    end
+})
+local noclipEnabled = false
+
+MainTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "Noclip",
+    Callback = function(Value)
+        noclipEnabled = Value
+        game:GetService("RunService").Stepped:Connect(function()
+            if noclipEnabled then
+                for _, part in pairs(game.Players.LocalPlayer.Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+})
+local aimbotEnabled = false
+local aimPart = "Head"
+
+MainTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Flag = "Aimbot",
+    Callback = function(Value)
+        aimbotEnabled = Value
+    end
+})
+
+MainTab:CreateDropdown({
+    Name = "Aim Part",
+    Options = {"Head", "Chest"},
+    CurrentOption = "Head",
+    Flag = "AimPart",
+    Callback = function(Value)
+        aimPart = Value
+    end
+})
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if aimbotEnabled then
+        local closestEnemy = nil
+        local shortestDistance = math.huge
+
+        for _, npc in pairs(workspace:GetChildren()) do
+            if npc:IsA("Model") and npc:FindFirstChild("Humanoid") then
+                local distance = (npc.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestEnemy = npc
+                end
+            end
+        end
+
+        if closestEnemy then
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(game.Players.LocalPlayer.Character.HumanoidRootPart.Position, closestEnemy[aimPart].Position)
+        end
+    end
+end)
+local autoCollectEnabled = false
+local collectDistance = 5000 -- Adjustable
+
+MainTab:CreateToggle({
+    Name = "Auto Collect",
+    CurrentValue = false,
+    Flag = "AutoCollect",
+    Callback = function(Value)
+        autoCollectEnabled = Value
+        while autoCollectEnabled do
+            for _, obj in pairs(workspace:GetChildren()) do
+                if obj:IsA("Model") and obj:FindFirstChild("Cash") then
+                    local distance = (obj.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude
+                    if distance <= collectDistance then
+                        firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, obj, 0)
+                    end
+                end
+            end
+            wait(0.1)
+        end
+    end
+})
