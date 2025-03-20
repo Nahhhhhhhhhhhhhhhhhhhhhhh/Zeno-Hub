@@ -1,5 +1,122 @@
+local HttpService = game:GetService("HttpService")
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+local TEMP_KEY_LINK = "https://direct-link.net/1324468/zen-hub-dead-rails-script" -- Link for 24-hour keys
+local PERM_KEY_LINK = "Gettable Only In Discord" -- Link for permanent keys
+
+local TEMP_KEY_STORAGE = "ZenHubTempKey"
+local PERM_KEY_STORAGE = "ZenHubPermKey"
+local EXPIRATION_TIME = 86400 -- 24 hours in seconds
+
+-- Permanent key list (you can add more permanent keys here)
+local permanentKeys = {
+    "PERM-ABC123",
+    "PERM-ZENHUB",
+    "PERM-ELITEUSER"
+}
+
+-- Function to check if a key is permanent
+local function isPermanentKey(key)
+    for _, permKey in pairs(permanentKeys) do
+        if key == permKey then
+            return true
+        end
+    end
+    return false
+end
+
+-- Function to check if the temporary key is valid
+local function isTempKeyValid()
+    if isfile(TEMP_KEY_STORAGE) then
+        local data = readfile(TEMP_KEY_STORAGE)
+        local decoded = HttpService:JSONDecode(data)
+        if decoded.Key and os.time() < decoded.Expiration then
+            return true
+        end
+    end
+    return false
+end
+
+-- Function to save the temporary key with expiration
+local function saveTempKey(key)
+    local data = {
+        Key = key,
+        Expiration = os.time() + EXPIRATION_TIME
+    }
+    writefile(TEMP_KEY_STORAGE, HttpService:JSONEncode(data))
+end
+
+-- Function to save a permanent key
+local function savePermKey(key)
+    writefile(PERM_KEY_STORAGE, key)
+end
+
+-- Check if a permanent key is already saved
+local function hasPermKey()
+    if isfile(PERM_KEY_STORAGE) then
+        local savedKey = readfile(PERM_KEY_STORAGE)
+        if isPermanentKey(savedKey) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Key system prompt
+local function keyPrompt()
+    if not isTempKeyValid() and not hasPermKey() then
+        Rayfield:Notify({
+            Title = "Zen Hub Key Required",
+            Content = "Choose your key type:\n[1] Temporary Key (24 hours)\n[2] Permanent Key",
+            Duration = 10,
+            Image = "rbxassetid://4483345998"
+        })
+
+        -- Open both key links in clipboard
+        setclipboard("Temp Key: " .. TEMP_KEY_LINK .. "\nPerm Key: " .. PERM_KEY_LINK)
+        Rayfield:Notify({
+            Title = "Key Links Copied",
+            Content = "The key links have been copied to your clipboard. Paste them into your browser.",
+            Duration = 5
+        })
+
+        -- Ask for the key
+        local userKey = Rayfield:Prompt({
+            Title = "Enter Your Key",
+            Content = "Paste the key you received from the website.",
+            Placeholder = "Enter Key"
+        })
+
+        -- Permanent key validation
+        if isPermanentKey(userKey) then
+            savePermKey(userKey)
+            Rayfield:Notify({
+                Title = "Permanent Key Accepted",
+                Content = "You have permanent access!",
+                Duration = 5
+            })
+        elseif userKey == "TEMP-1234" then -- Simulate a correct temporary key
+            saveTempKey(userKey)
+            Rayfield:Notify({
+                Title = "Temporary Key Accepted",
+                Content = "You have access for 24 hours.",
+                Duration = 5
+            })
+        else
+            Rayfield:Notify({
+                Title = "Invalid Key",
+                Content = "Incorrect key. Try again.",
+                Duration = 5
+            })
+            keyPrompt()
+        end
+    end
+end
+
+-- Run key check
+keyPrompt()
+
+-- UI Window
 local Window = Rayfield:CreateWindow({
     Name = "Zen Hub",
     LoadingTitle = "Zen Hub",
@@ -9,22 +126,10 @@ local Window = Rayfield:CreateWindow({
         FolderName = "ZenHub",
         FileName = "ZenHubSettings"
     },
-  Discord = {
-      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
-      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
-      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
-   },
-
-   KeySystem = false, -- Set this to true to use our key system
-   KeySettings = {
-      Title = "Key For Zen Hub ",
-      Subtitle = "Key System",
-      Note = "To Get The Key Click The Link After You Get The Key Paste It", -- Use this to tell the user how to get a key
-      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = True, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
-   }
+    Discord = {
+        Enabled = false
+    },
+    KeySystem = false
 })
 
 -- Button to open/close the UI
