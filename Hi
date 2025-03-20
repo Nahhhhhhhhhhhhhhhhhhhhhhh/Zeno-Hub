@@ -1,0 +1,136 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Zen Hub",
+    LoadingTitle = "Zen Hub",
+    LoadingSubtitle = "by You",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "ZenHub",
+        FileName = "ZenHubSettings"
+    },
+  Discord = {
+      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
+      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
+      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+   },
+
+   KeySystem = false, -- Set this to true to use our key system
+   KeySettings = {
+      Title = "Key For Zen Hub ",
+      Subtitle = "Key System",
+      Note = "To Get The Key Click The Link After You Get The Key Paste It", -- Use this to tell the user how to get a key
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = True, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+   }
+})
+
+-- Button to open/close the UI
+local ZenButton = Instance.new("TextButton")
+ZenButton.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ZenButton.Size = UDim2.new(0, 100, 0, 50)
+ZenButton.Position = UDim2.new(0, 10, 0, 10)
+ZenButton.Text = "Zen"
+ZenButton.BackgroundColor3 = Color3.fromRGB(139, 0, 0)
+ZenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ZenButton.BorderSizePixel = 2
+ZenButton.BorderColor3 = Color3.fromRGB(255, 0, 0)
+
+local uiVisible = true
+ZenButton.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    Window.Main.Visible = uiVisible
+end)
+
+-- Main Section
+local MainSection = Window:CreateTab("Main", { Icon = "rbxassetid://4483345998" })
+
+-- Aura Kill Toggle Button
+local auraEnabled = false
+local auraRange = 50
+local auraDamage = 50
+
+local AuraButton = MainSection:CreateToggle({
+    Name = "Aura Kill",
+    CurrentValue = false,
+    Flag = "AuraToggle",
+    Callback = function(state)
+        auraEnabled = state
+        if auraEnabled then
+            print("Aura Kill Enabled")
+        else
+            print("Aura Kill Disabled")
+        end
+    end
+})
+
+-- Range Slider
+local RangeSlider = MainSection:CreateSlider({
+    Name = "Range",
+    Min = 10,
+    Max = 300,
+    CurrentValue = auraRange,
+    Flag = "RangeSlider",
+    Callback = function(value)
+        auraRange = value
+        print("Range set to:", auraRange)
+    end
+})
+
+-- Damage Slider
+local DamageSlider = MainSection:CreateSlider({
+    Name = "Damage",
+    Min = 50,
+    Max = 100000,
+    CurrentValue = auraDamage,
+    Flag = "DamageSlider",
+    Callback = function(value)
+        auraDamage = value
+        print("Damage set to:", auraDamage)
+    end
+})
+
+-- Aura Kill Function
+local function AuraKill()
+    while auraEnabled do
+        for _, npc in pairs(workspace:GetDescendants()) do
+            if npc:IsA("Model") and npc:FindFirstChild("Humanoid") then
+                local humanoid = npc:FindFirstChild("Humanoid")
+                local rootPart = npc:FindFirstChild("HumanoidRootPart")
+
+                if humanoid and rootPart then
+                    local distance = (rootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+
+                    if distance <= auraRange then
+                        if not npc:FindFirstChild("Friendly") then -- Avoid teammates
+                            humanoid:TakeDamage(auraDamage)
+
+                            -- Simulate dragging body (for Dead Rails)
+                            task.spawn(function()
+                                local drag = Instance.new("BodyPosition")
+                                drag.MaxForce = Vector3.new(5000, 5000, 5000)
+                                drag.Position = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+                                drag.Parent = rootPart
+                                wait(2)
+                                drag:Destroy()
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+        wait(0.5)
+    end
+end
+
+-- Activate aura in background loop
+task.spawn(function()
+    while true do
+        if auraEnabled then
+            AuraKill()
+        end
+        wait(0.5)
+    end
+end)
